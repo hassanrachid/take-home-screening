@@ -17,28 +17,31 @@ router.get('/:formId/filteredResponses', async (req, res) => {
       }
     });
 
-    const filteredResponses = response.data.responses.filter(response =>
-      filters.every(filter =>
-        response.questions.find(question => question.id === filter.id) &&
-        (() => {
-          const question = response.questions.find(question => question.id === filter.id);
-          const value = question ? question.value : null;
+    const filteredResponses = response.data.responses.filter(response => {
+      for (const filter of filters) {
+        const question = response.questions.find(question => question.id === filter.id);
+        const value = question ? question.value : null;
     
-          switch (filter.condition) {
-            case 'equals':
-              return value === filter.value;
-            case 'does_not_equal':
-              return value !== filter.value;
-            case 'greater_than':
-              return value > filter.value;
-            case 'less_than':
-              return value < filter.value;
-            default:
-              return false;
-          }
-        })()
-      )
-    );
+        switch (filter.condition) {
+          case 'equals':
+            if (value !== filter.value) return false;
+            break;
+          case 'does_not_equal':
+            if (value === filter.value) return false;
+            break;
+          case 'greater_than':
+            if (value <= filter.value) return false;
+            break;
+          case 'less_than':
+            if (value >= filter.value) return false;
+            break;
+          default:
+            return false;
+        }
+      }
+    
+      return true;
+    });
 
     const result = {
       responses: filteredResponses,
